@@ -5,7 +5,17 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+My initial UML design centered on three core user actions: adding a pet to the system, scheduling
+a walk or care task, and viewing today's tasks in a clear daily list.
+
 - What classes did you include, and what responsibilities did you assign to each?
+
+    - Four main classes: Owner, Pet, Task, and Scheduler
+        - Owner class stores the pet owner's information and preferences and keeps track of their pets
+        - Pet class stores each pet's basic details and the care tasks associated with that pet
+        - Task class represents an individual care activity, such as a walk or feeding, and stores details like title, duration, priority, and completion status
+        - Scheduler class is responsible for organizing tasks based on available time and priority, then generating a daily plan for the user
+
 
 **b. Design changes**
 

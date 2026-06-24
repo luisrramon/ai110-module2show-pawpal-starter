@@ -1,0 +1,47 @@
+classDiagram
+    class Owner {
+        +string name
+        +string email
+        +string preferences
+        +List~Pet~ pets
+        +add_pet(pet: Pet) void
+        +remove_pet(pet: Pet) void
+        +get_pets() List~Pet~
+    }
+
+    class Pet {
+        +string name
+        +string species
+        +int age
+        +string care_notes
+        +List~Task~ tasks
+        +add_task(task: Task) void
+        +remove_task(task: Task) void
+        +get_pending_tasks() List~Task~
+    }
+
+    class Task {
+        +string title
+        +string description
+        +int duration_minutes
+        +string priority
+        +string category
+        +bool completed
+        +mark_complete() void
+        +update_priority(priority: string) void
+    }
+
+    class Scheduler {
+        +int available_minutes
+        +List~Task~ task_queue
+        +generate_schedule(pet: Pet) List~Task~
+        +sort_by_priority(tasks: List~Task~) List~Task~
+        +filter_by_time(tasks: List~Task~) List~Task~
+        +explain_plan(tasks: List~Task~) string
+    }
+
+    Owner "1" --> "0..*" Pet : has
+    Pet "1" --> "0..*" Task : has
+    Scheduler ..> Pet : builds plan for
+    Scheduler ..> Task : orders and filters
+    Scheduler ..> Owner : uses preferences
