@@ -54,6 +54,22 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 #   ...
 ```
 
+```
+(.venv) luisramon@Mac ai110-module2show-pawpal-starter % python main.py           
+Today's Schedule
+=================
+Owner: Jordan Lee
+
++00 min to +15 min | Playtime (15 min, priority: medium)
++15 min to +25 min | Breakfast (10 min, priority: high)
++25 min to +45 min | Morning walk (20 min, priority: high)
+
+Planned tasks:
+- Playtime: priority medium, 15 min, starts at +0 min
+- Breakfast: priority high, 10 min, starts at +15 min
+- Morning walk: priority high, 20 min, starts at +25 min
+```
+
 ## 🧪 Testing PawPal+
 
 ```bash
