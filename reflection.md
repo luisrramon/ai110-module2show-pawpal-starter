@@ -20,8 +20,13 @@ a walk or care task, and viewing today's tasks in a clear daily list.
 **b. Design changes**
 
 - Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+Yes
 
+- If yes, describe at least one change and why you made it.
+    - I added validation for task priority and duration so the schedulerworks with consistent, predictable data.
+    - I changed the scheduler to sort tasks by priority and filter them by available time so the plan is actually generated from the pet's pending tasks.
+    - I added basic add/remove behavior for pets and tasks so the data model can manage relationships instead of leaving them as placeholders
+    - I introduced a simple schedule entry model to make it easier to expand the plan output later with timing and explanation details.
 ---
 
 ## 2. Scheduling Logic and Tradeoffs
