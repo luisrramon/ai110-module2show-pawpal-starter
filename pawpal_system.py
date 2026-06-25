@@ -23,12 +23,17 @@ class ScheduleEntry:
 class Task:
 	title: str
 	description: str = ""
+	frequency: str = "daily"
 	duration_minutes: int = 0
 	priority: str = "medium"
 	category: str = "general"
 	completed: bool = False
 
 	def __post_init__(self) -> None:
+		self.title = self.title.strip()
+		self.description = self.description.strip()
+		self.frequency = self.frequency.strip().lower() or "daily"
+		self.category = self.category.strip().lower() or "general"
 		if self.duration_minutes < 0:
 			raise ValueError("duration_minutes must be non-negative")
 		self.priority = self.priority.lower()
@@ -53,6 +58,13 @@ class Pet:
 	care_notes: str = ""
 	tasks: list[Task] = field(default_factory=list)
 
+	def __post_init__(self) -> None:
+		self.name = self.name.strip()
+		self.species = self.species.strip().lower()
+		self.care_notes = self.care_notes.strip()
+		if self.age < 0:
+			raise ValueError("age must be non-negative")
+
 	def add_task(self, task: Task) -> None:
 		if task in self.tasks:
 			raise ValueError("task already exists for this pet")
@@ -67,6 +79,9 @@ class Pet:
 	def get_pending_tasks(self) -> list[Task]:
 		return [task for task in self.tasks if not task.completed]
 
+	def get_completed_tasks(self) -> list[Task]:
+		return [task for task in self.tasks if task.completed]
+
 
 @dataclass
 class Owner:
@@ -74,6 +89,15 @@ class Owner:
 	email: str
 	preferences: str = ""
 	pets: list[Pet] = field(default_factory=list)
+
+	def __post_init__(self) -> None:
+		self.name = self.name.strip()
+		self.email = self.email.strip()
+		self.preferences = self.preferences.strip()
+		if not self.name:
+			raise ValueError("name must not be empty")
+		if not self.email:
+			raise ValueError("email must not be empty")
 
 	def add_pet(self, pet: Pet) -> None:
 		if pet in self.pets:
@@ -89,6 +113,16 @@ class Owner:
 	def get_pets(self) -> list[Pet]:
 		return list(self.pets)
 
+	def get_all_tasks(self, include_completed: bool = False) -> list[Task]:
+		tasks: list[Task] = []
+		for pet in self.pets:
+			pet_tasks = pet.tasks if include_completed else pet.get_pending_tasks()
+			tasks.extend(pet_tasks)
+		return tasks
+
+	def get_all_pending_tasks(self) -> list[Task]:
+		return self.get_all_tasks(include_completed=False)
+
 
 class Scheduler:
 	def __init__(self, available_minutes: int, task_queue: list[Task] | None = None) -> None:
@@ -97,9 +131,19 @@ class Scheduler:
 		self.available_minutes = available_minutes
 		self.task_queue = task_queue or []
 
-	def generate_schedule(self, pet: Pet) -> list[Task]:
-		tasks = self.sort_by_priority(pet.get_pending_tasks())
-		return self.filter_by_time(tasks)
+	def load_tasks_from_owner(self, owner: Owner, include_completed: bool = False) -> list[Task]:
+		self.task_queue = owner.get_all_tasks(include_completed=include_completed)
+		return list(self.task_queue)
+
+	def generate_schedule(self, source: Owner | Pet) -> list[ScheduleEntry]:
+		if isinstance(source, Owner):
+			tasks = source.get_all_pending_tasks()
+		else:
+			tasks = source.get_pending_tasks()
+
+		sorted_tasks = self.sort_by_priority(tasks)
+		selected_tasks = self.filter_by_time(sorted_tasks)
+		return self._build_schedule_entries(selected_tasks)
 
 	def sort_by_priority(self, tasks: list[Task]) -> list[Task]:
 		priority_rank = {priority: index for index, priority in enumerate(VALID_PRIORITIES)}
@@ -117,16 +161,31 @@ class Scheduler:
 				remaining_minutes -= task.duration_minutes
 		return selected_tasks
 
-	def explain_plan(self, tasks: list[Task]) -> str:
-		if not tasks:
-			return "No tasks fit within the available time."
-
-		lines = ["Planned tasks:"]
+	def _build_schedule_entries(self, tasks: list[Task]) -> list[ScheduleEntry]:
+		entries: list[ScheduleEntry] = []
 		elapsed_minutes = 0
 		for task in tasks:
 			start_minute = elapsed_minutes
-			elapsed_minutes += task.duration_minutes
+			end_minute = start_minute + task.duration_minutes
+			entries.append(
+				ScheduleEntry(
+					task=task,
+					start_minute=start_minute,
+					end_minute=end_minute,
+					reason=f"priority {task.priority} within available time",
+				)
+			)
+			elapsed_minutes = end_minute
+		return entries
+
+	def explain_plan(self, schedule: list[ScheduleEntry]) -> str:
+		if not schedule:
+			return "No tasks fit within the available time."
+
+		lines = ["Planned tasks:"]
+		for entry in schedule:
+			task = entry.task
 			lines.append(
-				f"- {task.title}: priority {task.priority}, {task.duration_minutes} min, starts at +{start_minute} min"
+				f"- {task.title}: priority {task.priority}, {task.duration_minutes} min, starts at +{entry.start_minute} min"
 			)
 		return "\n".join(lines)
