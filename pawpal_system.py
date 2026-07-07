@@ -6,7 +6,9 @@ Streamlit app.
 
 from __future__ import annotations
 
+from datetime import date, timedelta
 from dataclasses import dataclass, field
+from collections import defaultdict
 
 VALID_PRIORITIES = ("low", "medium", "high")
 
@@ -25,25 +27,80 @@ class Task:
 	description: str = ""
 	frequency: str = "daily"
 	duration_minutes: int = 0
+	time: str = "00:00"
+	due_date: date | None = None
 	priority: str = "medium"
 	category: str = "general"
+	pet_name: str = ""
 	completed: bool = False
 
 	def __post_init__(self) -> None:
-		"""Normalize task fields and validate priority and duration."""
+		"""Normalize task fields and validate priority, duration, time, and due date."""
 		self.title = self.title.strip()
 		self.description = self.description.strip()
 		self.frequency = self.frequency.strip().lower() or "daily"
 		self.category = self.category.strip().lower() or "general"
+		self.pet_name = self.pet_name.strip()
 		if self.duration_minutes < 0:
 			raise ValueError("duration_minutes must be non-negative")
+		self.time = self._normalize_time(self.time)
+		self.due_date = self._normalize_due_date(self.due_date)
 		self.priority = self.priority.lower()
 		if self.priority not in VALID_PRIORITIES:
 			raise ValueError(f"priority must be one of {', '.join(VALID_PRIORITIES)}")
 
-	def mark_complete(self) -> None:
-		"""Mark this task as completed."""
+	@staticmethod
+	def _normalize_time(time_value: str) -> str:
+		"""Validate a task time in HH:MM format and return a normalized value."""
+		normalized_time = time_value.strip()
+		if not normalized_time:
+			return "00:00"
+
+		parts = normalized_time.split(":")
+		if len(parts) != 2:
+			raise ValueError("time must use HH:MM format")
+
+		hour_text, minute_text = parts
+		if not (hour_text.isdigit() and minute_text.isdigit()):
+			raise ValueError("time must use HH:MM format")
+
+		hour = int(hour_text)
+		minute = int(minute_text)
+		if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+			raise ValueError("time must use HH:MM format")
+		return f"{hour:02d}:{minute:02d}"
+
+	@staticmethod
+	def _normalize_due_date(due_date_value: date | None) -> date | None:
+		"""Keep due dates as date objects and leave them unset when omitted."""
+		if due_date_value is None or isinstance(due_date_value, date):
+			return due_date_value
+		raise TypeError("due_date must be a datetime.date value or None")
+
+	def create_next_occurrence(self, completion_date: date | None = None) -> Task | None:
+		"""Create the next daily or weekly instance after completion."""
+		normalized_frequency = self.frequency.lower()
+		if normalized_frequency not in {"daily", "weekly"}:
+			return None
+
+		completion_day = completion_date or self.due_date or date.today()
+		delta = timedelta(days=1) if normalized_frequency == "daily" else timedelta(days=7)
+		return Task(
+			title=self.title,
+			description=self.description,
+			frequency=self.frequency,
+			duration_minutes=self.duration_minutes,
+			time=self.time,
+			due_date=completion_day + delta,
+			priority=self.priority,
+			category=self.category,
+			pet_name=self.pet_name,
+		)
+
+	def mark_complete(self, completion_date: date | None = None) -> Task | None:
+		"""Mark this task as completed and return the next recurring instance when needed."""
 		self.completed = True
+		return self.create_next_occurrence(completion_date=completion_date)
 
 	def update_priority(self, priority: str) -> None:
 		"""Update the task priority after validating the value."""
@@ -73,6 +130,7 @@ class Pet:
 		"""Add a task to this pet."""
 		if task in self.tasks:
 			raise ValueError("task already exists for this pet")
+		task.pet_name = self.name
 		self.tasks.append(task)
 
 	def remove_task(self, task: Task) -> None:
@@ -161,6 +219,52 @@ class Scheduler:
 		sorted_tasks = self.sort_by_priority(tasks)
 		selected_tasks = self.filter_by_time(sorted_tasks)
 		return self._build_schedule_entries(selected_tasks)
+
+	def sort_by_time(self, tasks: list[Task]) -> list[Task]:
+		"""Sort tasks by their HH:MM time value."""
+		return sorted(
+			tasks,
+			key=lambda task: tuple(int(part) for part in task.time.split(":")),
+		)
+
+	def detect_task_conflicts(self, tasks: list[Task]) -> list[str]:
+		"""Return warning messages for tasks that share the same scheduled time."""
+		tasks_by_time: dict[str, list[Task]] = defaultdict(list)
+		for task in tasks:
+			tasks_by_time[task.time].append(task)
+
+		warnings: list[str] = []
+		for time_value, same_time_tasks in sorted(tasks_by_time.items()):
+			if len(same_time_tasks) < 2:
+				continue
+
+			labels = [
+				f"{task.title} for {task.pet_name}" if task.pet_name else task.title
+				for task in same_time_tasks
+			]
+			warnings.append(
+				f"Warning: {len(same_time_tasks)} tasks are scheduled at {time_value}: {', '.join(labels)}"
+			)
+
+		return warnings
+
+	def filter_tasks(
+		self,
+		tasks: list[Task],
+		*,
+		completed: bool | None = None,
+		pet_name: str | None = None,
+	) -> list[Task]:
+		"""Filter tasks by completion status, pet name, or both."""
+		filtered_tasks = tasks
+		if completed is not None:
+			filtered_tasks = [task for task in filtered_tasks if task.completed is completed]
+		if pet_name is not None:
+			normalized_pet_name = pet_name.strip().lower()
+			filtered_tasks = [
+				task for task in filtered_tasks if task.pet_name.lower() == normalized_pet_name
+			]
+		return filtered_tasks
 
 	def sort_by_priority(self, tasks: list[Task]) -> list[Task]:
 		"""Sort tasks by priority, duration, and title."""

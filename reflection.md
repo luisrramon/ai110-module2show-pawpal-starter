@@ -36,10 +36,19 @@ Yes
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
+- My scheduler considers task time, priority, duration, completion status, and pet name.
+- I treated priority and time as the most important constraints because the plan should handle urgent tasks first and also detect conflicts.
+- I used duration as a secondary constraint so tasks fit within the available time.
+- Owner preferences matter more as a design detail than as a hard rule in the current version.
+
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
+
+- One tradeoff is that the scheduler uses simple rules instead of a more advanced optimization algorithm.
+- This is reasonable because PawPal+ is a small planning tool, and the simpler approach is easier to understand, test, and explain.
+- It also keeps the schedule predictable for the user.
 
 ---
 
