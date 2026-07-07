@@ -143,12 +143,76 @@ st.subheader("Build Schedule")
 st.caption("This button now calls your scheduling logic.")
 
 available_minutes = st.number_input("Available minutes", min_value=0, max_value=480, value=60)
+scheduler = Scheduler(available_minutes=int(available_minutes))
+
+all_tasks = owner.get_all_tasks(include_completed=True)
+
+if all_tasks:
+    st.markdown("### Sorted tasks")
+    sorted_tasks = scheduler.sort_by_time(all_tasks)
+    st.table(
+        [
+            {
+                "time": task.time,
+                "pet": task.pet_name or "Unknown",
+                "task": task.title,
+                "duration_minutes": task.duration_minutes,
+                "priority": task.priority,
+                "completed": task.completed,
+            }
+            for task in sorted_tasks
+        ]
+    )
+
+    st.markdown("### Task filters")
+    pending_tasks = scheduler.filter_tasks(all_tasks, completed=False)
+    completed_tasks = scheduler.filter_tasks(all_tasks, completed=True)
+
+    filter_col1, filter_col2 = st.columns(2)
+    with filter_col1:
+        st.write("Pending tasks")
+        st.table(
+            [
+                {
+                    "pet": task.pet_name or "Unknown",
+                    "time": task.time,
+                    "task": task.title,
+                    "priority": task.priority,
+                }
+                for task in pending_tasks
+            ]
+            or [{"pet": "-", "time": "-", "task": "No pending tasks", "priority": "-"}]
+        )
+    with filter_col2:
+        st.write("Completed tasks")
+        st.table(
+            [
+                {
+                    "pet": task.pet_name or "Unknown",
+                    "time": task.time,
+                    "task": task.title,
+                    "priority": task.priority,
+                }
+                for task in completed_tasks
+            ]
+            or [{"pet": "-", "time": "-", "task": "No completed tasks", "priority": "-"}]
+        )
+
+    conflict_warnings = scheduler.detect_task_conflicts(all_tasks)
+    if conflict_warnings:
+        st.warning("Schedule conflict detected. Review the tasks below and adjust one of the overlapping times.")
+        for warning in conflict_warnings:
+            st.warning(warning)
+    else:
+        st.success("No task conflicts detected.")
+
+if not all_tasks:
+    st.info("Add pets and tasks above to see sorted, filtered, and conflict-aware scheduling views.")
 
 if st.button("Generate schedule"):
     if not owner.pets:
         st.warning("Add at least one pet before generating a schedule.")
     else:
-        scheduler = Scheduler(available_minutes=int(available_minutes))
         schedule = scheduler.generate_schedule(owner)
         st.success("Today's schedule")
         for entry in schedule:

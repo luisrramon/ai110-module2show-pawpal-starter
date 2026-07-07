@@ -1,0 +1,84 @@
+classDiagram
+    class ScheduleEntry {
+        +Task task
+        +int start_minute
+        +int end_minute
+        +string reason
+    }
+
+    class Task {
+        +string title
+        +string description
+        +string frequency
+        +int duration_minutes
+        +string time
+        +date due_date
+        +string priority
+        +string category
+        +string pet_name
+        +bool completed
+        +__post_init__() void
+        +_normalize_time(time_value: string) string
+        +_normalize_due_date(due_date_value: date) date
+        +create_next_occurrence(completion_date: date) Task?
+        +mark_complete(completion_date: date) Task?
+        +update_priority(priority: string) void
+    }
+
+    class Pet {
+        +string name
+        +string species
+        +int age
+        +string care_notes
+        +List~Task~ tasks
+        +__post_init__() void
+        +add_task(task: Task) void
+        +remove_task(task: Task) void
+        +get_pending_tasks() List~Task~
+        +get_completed_tasks() List~Task~
+    }
+
+    class Owner {
+        +string name
+        +string email
+        +string preferences
+        +List~Pet~ pets
+        +__post_init__() void
+        +add_pet(pet: Pet) void
+        +remove_pet(pet: Pet) void
+        +get_pets() List~Pet~
+        +get_all_tasks(include_completed: bool) List~Task~
+        +get_all_pending_tasks() List~Task~
+    }
+
+    class Scheduler {
+        +int available_minutes
+        +List~Task~ task_queue
+        +__init__(available_minutes: int, task_queue: List~Task~) void
+        +load_tasks_from_owner(owner: Owner, include_completed: bool) List~Task~
+        +generate_schedule(source: Owner | Pet) List~ScheduleEntry~
+        +sort_by_time(tasks: List~Task~) List~Task~
+        +detect_task_conflicts(tasks: List~Task~) List~string~
+        +filter_tasks(tasks: List~Task~, completed: bool, pet_name: string) List~Task~
+        +sort_by_priority(tasks: List~Task~) List~Task~
+        +filter_by_time(tasks: List~Task~) List~Task~
+        +_build_schedule_entries(tasks: List~Task~) List~ScheduleEntry~
+        +explain_plan(schedule: List~ScheduleEntry~) string
+    }
+
+    class VALID_PRIORITIES {
+        <<enumeration>>
+        low
+        medium
+        high
+    }
+
+    Owner "1" --> "0..*" Pet : has
+    Pet "1" --> "0..*" Task : has
+    Owner ..> Task : aggregates through pets
+    Scheduler ..> Owner : loads tasks from owner
+    Scheduler ..> Pet : generates plans for one pet
+    Scheduler ..> Task : sorts, filters, and evaluates tasks
+    Scheduler ..> ScheduleEntry : builds schedule output
+    Task ..> Task : creates next occurrence
+    Task ..> VALID_PRIORITIES : validates priority

@@ -22,6 +22,18 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Features
+
+PawPal+ currently includes:
+
+- Pet and owner data models with input normalization and basic validation
+- Task management with priority, due dates, time fields, completion tracking, and recurring-task support
+- Scheduling based on task priority and available time
+- Chronological sorting for task review and planning
+- Conflict warnings when multiple tasks share the same time
+- Filtering by completion status and pet name
+- Schedule explanations that summarize why each task was selected
+
 ## Getting started
 
 ### Setup
@@ -125,14 +137,37 @@ Based on the current test results, the system is reliable for the behaviors cove
 | Conflict detection | `Scheduler.detect_task_conflicts()` | Returns warning messages when multiple tasks share the same time. |
 | Recurring task logic | `Task.mark_complete()` and `Task.create_next_occurrence()` | Creates the next daily or weekly instance after completion using `timedelta`. |
 
-## 📸 Demo Walkthrough
+## Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+1. Open the Streamlit app in `app.py` and enter an owner name, email, and one or more pets.
+2. Add tasks to each pet with a title, duration, priority, category, and optional frequency.
+3. Review the sorted task table to see every task ordered by time.
+4. Watch for conflict warnings if two tasks share the same scheduled time.
+5. Generate today's schedule to see which tasks fit within the available minutes.
+6. Compare pending and completed task views to confirm that filtering works as expected.
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+Example workflow: add a pet, schedule a task, then generate today's plan to see how the scheduler orders the work and explains the result.
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+Key Scheduler behaviors shown in the UI:
+
+- Sorting by time using `Scheduler.sort_by_time()`
+- Filtering by completion status and pet name using `Scheduler.filter_tasks()`
+- Conflict warnings using `Scheduler.detect_task_conflicts()`
+- Daily recurrence using `Task.mark_complete()` and `Task.create_next_occurrence()`
+
+Sample CLI output from running `main.py`:
+
+```text
+Today's Schedule
+=================
+Owner: Jordan Lee
+
++00 min to +15 min | Playtime (15 min, priority: medium)
++15 min to +25 min | Breakfast (10 min, priority: high)
++25 min to +45 min | Morning walk (20 min, priority: high)
+
+Planned tasks:
+- Playtime: priority medium, 15 min, starts at +0 min
+- Breakfast: priority high, 10 min, starts at +15 min
+- Morning walk: priority high, 20 min, starts at +25 min
+```
