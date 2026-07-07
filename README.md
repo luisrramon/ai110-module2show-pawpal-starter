@@ -86,6 +86,34 @@ Sample test output:
 # Paste your pytest output here
 ```
 
+## Testing PawPal+
+
+Run the test suite with:
+
+```bash
+python -m pytest
+```
+
+These tests cover the most important PawPal+ behaviors: task completion, daily and weekly recurrence, pet task assignment, chronological sorting, filtering by completion and pet name, conflict detection for duplicate times, and schedule generation edge cases such as empty pets, zero time budgets, and excluded completed tasks.
+
+Successful test run:
+
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.0, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/luisramon/ai110-module2show-pawpal-starter
+plugins: anyio-4.14.1
+collected 11 items                                                              
+
+tests/test_pawpal.py ...........                                         [100%]
+
+============================== 11 passed in 0.03s ==============================
+```
+
+Confidence Level: ★★★★★
+
+Based on the current test results, the system is reliable for the behaviors covered by the suite. The main remaining risk is untested invalid-input handling, such as malformed times or negative values.
+
 ## 📐 Smarter Scheduling
 
 > Fill in once you've implemented scheduling logic.

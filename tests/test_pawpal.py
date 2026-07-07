@@ -1,6 +1,6 @@
 from datetime import date
 
-from pawpal_system import Pet, Scheduler, Task
+from pawpal_system import Owner, Pet, Scheduler, Task
 
 
 def test_task_completion_changes_status() -> None:
@@ -107,3 +107,46 @@ def test_detect_task_conflicts_returns_warning_for_shared_time() -> None:
 	assert "07:15" in warnings[0]
 	assert "Breakfast for Mochi" in warnings[0]
 	assert "Water bowl refill for Pixel" in warnings[0]
+
+
+def test_generate_schedule_returns_empty_list_for_owner_with_no_pets() -> None:
+	owner = Owner(name="Jordan Lee", email="jordan@example.com")
+	scheduler = Scheduler(available_minutes=60)
+
+	schedule = scheduler.generate_schedule(owner)
+
+	assert schedule == []
+
+
+def test_generate_schedule_returns_empty_list_when_time_budget_is_zero() -> None:
+	pet = Pet(name="Mochi", species="dog")
+	pet.add_task(Task(title="Breakfast", duration_minutes=10, priority="high"))
+	scheduler = Scheduler(available_minutes=0)
+
+	schedule = scheduler.generate_schedule(pet)
+
+	assert schedule == []
+
+
+def test_generate_schedule_excludes_completed_tasks() -> None:
+	pet = Pet(name="Mochi", species="dog")
+	completed_task = Task(title="Morning walk", duration_minutes=20, priority="high")
+	pending_task = Task(title="Breakfast", duration_minutes=10, priority="high")
+	completed_task.mark_complete()
+	pet.add_task(completed_task)
+	pet.add_task(pending_task)
+	scheduler = Scheduler(available_minutes=60)
+
+	schedule = scheduler.generate_schedule(pet)
+
+	assert [entry.task.title for entry in schedule] == ["Breakfast"]
+	assert schedule[0].task.completed is False
+
+
+def test_unsupported_recurring_task_returns_no_next_occurrence() -> None:
+	task = Task(title="Special reminder", frequency="monthly", duration_minutes=5)
+
+	next_task = task.mark_complete(completion_date=date(2026, 7, 6))
+
+	assert task.completed is True
+	assert next_task is None
